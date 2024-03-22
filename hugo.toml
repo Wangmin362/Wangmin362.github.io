@@ -1,4 +1,9 @@
 baseURL = 'https://Wangmin362.github.io/'
 languageCode = 'en-us'
-title = 'My New Hugo Site'
+title = 'Gouster Cloud'
 theme = 'awesome'
+[markup]
+  [markup.tableOfContents]
+    endLevel = 5
+    ordered = false
+    startLevel = 1
