@@ -1,3 +1,9 @@
 [submodule "themes/ananke"]
 	path = themes/ananke
 	url = https://ghproxy.net/https://github.com/theNewDynamic/gohugo-theme-ananke.git
+[submodule "themes/awesome"]
+	path = themes/awesome
+	url = https://ghproxy.net/https://github.com/hugo-sid/hugo-blog-awesome.git
+[submodule "themes/cleanwhite"]
+	path = themes/cleanwhite
+	url = https://ghproxy.net/https://github.com/zhaohuabing/hugo-theme-cleanwhite.git
