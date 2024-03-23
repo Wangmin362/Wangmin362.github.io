@@ -30,16 +30,16 @@ languages:
       series: series
     menu:
       main:
-        - name: Archive
+        - name: 归档
           url: archives
           weight: 5
-        - name: Search
+        - name: 搜索
           url: search/
           weight: 10
-        - name: Tags
+        - name: 标签
           url: tags/
           weight: 10
-        - name: WiKi
+        - name: 我的主页
           url: https://github.com/adityatelange/hugo-PaperMod/wiki/
 
   fr:
@@ -115,7 +115,10 @@ params:
   author: Theme PaperMod
   # author: ["Me", "You"] # multiple authors
 
-  defaultTheme: auto
+  # 用于设置浏览器的背景颜色，可以设置为auto, light, dark;
+  # auto会自动根据浏览器的主题显示不同的颜色
+  defaultTheme: dark
+  # 用于启用或者是禁用背景颜色的切换
   # disableThemeToggle: true
   ShowShareButtons: true
   ShowReadingTime: true
@@ -123,6 +126,7 @@ params:
   displayFullLangName: true
   ShowPostNavLinks: true
   ShowBreadCrumbs: true
+  # 显示代码拷贝按钮
   ShowCodeCopyButtons: true
   ShowRssButtonInSectionTermList: true
   ShowAllPagesInArchive: true
@@ -133,7 +137,7 @@ params:
 
   profileMode:
     enabled: false
-    title: PaperMod
+    title: GousterCloud
     imageUrl: "#"
     imageTitle: my image
     # imageWidth: 120
