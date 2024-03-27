@@ -1,7 +1,8 @@
 # If your site is in 'https', then make sure your base url isn't written using 'http' otherwise your sitemap would
 # contain http (as opposeed to https) URLs. This would affect Google indexing of your URLs.
 baseURL: "https://Wangmin362.github.io"
-title: PaperMod
+title: GousterCloud
+# 每页显示博客的数量
 paginate: 5
 theme: [PaperMod]
 
@@ -19,6 +20,12 @@ DefaultContentLanguage: en
 minify:
   disableXML: true
   # minifyOutput: true
+
+# 设置分类，每个分类可以指定单独的按钮
+taxonomies:
+  category: categories
+  series: series
+  tag: tags
 
 languages:
   en:
@@ -40,7 +47,7 @@ languages:
           url: tags/
           weight: 10
         - name: 我的主页
-          url: https://github.com/adityatelange/hugo-PaperMod/wiki/
+          url: https://github.com/Wangmin362
 
   fr:
     languageName: ":fr:"
