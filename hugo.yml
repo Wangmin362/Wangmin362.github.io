@@ -65,12 +65,15 @@ params:
   author: Theme PaperMod
   # author: ["Me", "You"] # multiple authors
 
+  DateFormat: "2006年1月2日"
+
   # 用于设置浏览器的背景颜色，可以设置为auto, light, dark;
   # auto会自动根据浏览器的主题显示不同的颜色
   defaultTheme: dark
   # 用于启用或者是禁用背景颜色的切换
   # disableThemeToggle: true
   ShowShareButtons: true
+  # 显示博客的阅读时间
   ShowReadingTime: true
   # disableSpecial1stPost: true
   displayFullLangName: true
@@ -82,7 +85,9 @@ params:
   ShowAllPagesInArchive: true
   ShowPageNums: true
   ShowToc: true
+  #  启用/禁用评论
   # comments: false
+  # TODO 图片应该放在哪里？
   images: ["images/papermod-cover.png"]
 
   profileMode:
