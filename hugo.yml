@@ -62,7 +62,7 @@ outputs:
 params:
   env: production # to enable google analytics, opengraph, twitter-cards and schema.
   description: "Theme PaperMod - https://github.com/adityatelange/hugo-PaperMod"
-  author: Theme PaperMod
+  author: 也无风雨也无晴
   # author: ["Me", "You"] # multiple authors
 
   DateFormat: "2006年1月2日"
