@@ -1,0 +1,84 @@
+# ── 站点基础配置 ───────────────────────────────────────────────
+# 上线前只需改 baseURL / title / author 三处（README 有说明）
+baseURL = "https://<你的GitHub用户名>.github.io/"   # ← 上线前改成你的
+title = "Heterogeneous Inference Notes"              # ← 站点名，可改
+languageCode = "en"
+theme = "PaperMod"
+enableRobotsTXT = true
+buildDrafts = false        # draft: true 的文章不会发布（模板默认是草稿）
+buildFuture = false
+pygmentsUseClasses = true
+enableEmoji = true
+
+[pagination]
+  pagerSize = 10
+
+# ── 搜索需要的输出格式 ─────────────────────────────────────────
+[outputs]
+  home = ["HTML", "RSS", "JSON"]
+
+# ── PaperMod 参数 ──────────────────────────────────────────────
+[params]
+  env = "production"
+  description = "Real benchmarks of LLM inference across heterogeneous / domestic accelerators (Ascend, Cambricon, Hygon, Moore Threads, Kunlunxin) vs NVIDIA. Reproducible data, not vibes."
+  author = "<你的名字/ID>"                # ← 上线前改
+  defaultTheme = "auto"                   # 跟随系统深/浅色
+  ShowReadingTime = true
+  ShowShareButtons = true
+  ShowCodeCopyButtons = true              # 代码块一键复制
+  ShowToc = true                          # 文章目录
+  TocOpen = false
+  ShowBreadCrumbs = true
+  ShowPostNavLinks = true
+  ShowRssButtonInSectionTermList = true
+  disableSpecial1stPost = false
+
+  # 首页个人名片（第二简历的门面）
+  [params.homeInfoParams]
+    Title = "异构推理实测笔记 · Heterogeneous Inference, Measured"
+    Content = """
+Go / Kubernetes engineer (7y) working on **LLM inference control-plane & scheduling** across **heterogeneous domestic accelerators**.
+
+Here I publish **reproducible benchmarks** — the same model, same load, run head-to-head on NVIDIA vs Ascend / Cambricon / Hygon / Moore Threads / Kunlunxin — plus the routing, KV-cache and cost trade-offs behind them.
+
+No vibes. Every number ships with the exact command to reproduce it.
+"""
+
+  # 社交链接（上线前填自己的；填不了的整行删掉）
+  [[params.socialIcons]]
+    name = "github"
+    url = "https://github.com/<你的GitHub用户名>"
+  [[params.socialIcons]]
+    name = "x"
+    url = "https://x.com/<你的handle>"
+  [[params.socialIcons]]
+    name = "rss"
+    url = "index.xml"
+
+# ── 顶部菜单 ───────────────────────────────────────────────────
+[[menu.main]]
+  identifier = "posts"
+  name = "Posts"
+  url = "/posts/"
+  weight = 10
+[[menu.main]]
+  identifier = "tags"
+  name = "Tags"
+  url = "/tags/"
+  weight = 20
+[[menu.main]]
+  identifier = "search"
+  name = "Search"
+  url = "/search/"
+  weight = 30
+
+# ── 代码高亮 ───────────────────────────────────────────────────
+[markup]
+  [markup.highlight]
+    noClasses = false
+    lineNos = false
+    codeFences = true
+    guessSyntax = true
+  # 允许文章里写原始 HTML（表格/details 折叠等）
+  [markup.goldmark.renderer]
+    unsafe = true
