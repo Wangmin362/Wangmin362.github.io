@@ -25,7 +25,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      HUGO_VERSION: 0.140.2       # 需要更新时改这里
+      HUGO_VERSION: 0.146.0       # 需 ≥0.146.0(PaperMod 主题要求);需要更新时改这里
     steps:
       - name: Install Hugo CLI
         run: |
