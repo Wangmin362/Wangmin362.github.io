@@ -1,7 +1,7 @@
 # ── 站点基础配置 ───────────────────────────────────────────────
 # 上线前只需改 baseURL / title / author 三处（README 有说明）
-baseURL = "https://<你的GitHub用户名>.github.io/"   # ← 上线前改成你的
-title = "Heterogeneous Inference Notes"              # ← 站点名，可改
+baseURL = "https://wangmin362.github.io/"
+title = "Heterogeneous Inference Notes"              # ← 站点名，想改随时改，不影响网址
 languageCode = "en"
 theme = "PaperMod"
 enableRobotsTXT = true
@@ -21,7 +21,7 @@ enableEmoji = true
 [params]
   env = "production"
   description = "Real benchmarks of LLM inference across heterogeneous / domestic accelerators (Ascend, Cambricon, Hygon, Moore Threads, Kunlunxin) vs NVIDIA. Reproducible data, not vibes."
-  author = "<你的名字/ID>"                # ← 上线前改
+  author = "Wangmin362"                   # ← 想换成真名更像"第二简历"，随时改
   defaultTheme = "auto"                   # 跟随系统深/浅色
   ShowReadingTime = true
   ShowShareButtons = true
@@ -47,10 +47,11 @@ No vibes. Every number ships with the exact command to reproduce it.
   # 社交链接（上线前填自己的；填不了的整行删掉）
   [[params.socialIcons]]
     name = "github"
-    url = "https://github.com/<你的GitHub用户名>"
-  [[params.socialIcons]]
-    name = "x"
-    url = "https://x.com/<你的handle>"
+    url = "https://github.com/Wangmin362"
+  # 有 X/Twitter 后把下面三行取消注释并填 handle:
+  # [[params.socialIcons]]
+  #   name = "x"
+  #   url = "https://x.com/<你的handle>"
   [[params.socialIcons]]
     name = "rss"
     url = "index.xml"

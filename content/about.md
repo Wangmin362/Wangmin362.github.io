@@ -12,6 +12,6 @@ Most public LLM-inference benchmarks only cover NVIDIA. I happen to have hands-o
 
 **My rule:** every number ships with the exact command to reproduce it. If I can't show you how to reproduce it, I don't publish it.
 
-- GitHub: <FILL>
-- X / Twitter: <FILL>
-- Email: <FILL>
+- GitHub: [Wangmin362](https://github.com/Wangmin362)
+<!-- 有了再加: - X / Twitter: … -->
+<!-- 想公开再加: - Email: … -->
