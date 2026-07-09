@@ -8,17 +8,12 @@
 
 ---
 
-## 一、一次性上线（约 15 分钟，照抄即可）
+## 一、一次性上线（约 10 分钟，照抄即可）
 
-### 1. 补上 PaperMod 主题（本仓库没带主题，用 submodule 拉）
+### 1. ✅ 已替你完成（git 仓库 + PaperMod 主题都装好了）
 
-```bash
-cd /mnt/d/notebook/het-infra-blog
-git init
-git add -A && git commit -m "chore: blog scaffold"
-git submodule add --depth=1 https://github.com/adityatelange/hugo-PaperMod themes/PaperMod
-git commit -m "chore: add PaperMod theme"
-```
+`git init`、首次 commit、PaperMod 主题（submodule）**都已就绪**，无需再做。
+> 想验证：`cd /mnt/d/notebook/het-infra-blog && git log --oneline`（应看到 2 条提交）、`ls themes/PaperMod`（应有文件）。
 
 ### 2. 改 3 个占位符
 
