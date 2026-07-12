@@ -7,7 +7,6 @@ summary: "Same Qwen2.5-7B, same load, now with 1/2/4 cards each. Six accelerator
 ShowToc: true
 ---
 
-> 📌 **给 David 的说明（发布前删掉这段）**：数据表 / TP 扩展图 / 复现命令 / 版本表都是**真机实测**（2026-07-10~11 在 67 + 183 集群跑的），可以直接用。带 `〔观点待核〕` 的段落是我替你起草的判断，请用你自己的话改写核对。全过程 runbook + 每个坑见 vault `400_Experiments/w1-vllm-bench/cross-vendor/multi-card/`（RUNBOOK.md 记了 TP 整除头数、忙卡避让、HIP 不兼容等全部细节）。确认无误后删本段、删所有 `〔观点待核〕`、`draft: false` 发布。
 
 > **TL;DR** — Take the [nine-accelerator single-card benchmark](../domestic-accelerators-9-card-vllm/) and add a dimension: run the *same* models under the *same* load on 1, 2, 4, and **8** cards each (tensor parallel). Three things stood out. **(1) The smallest cards scale best on 7B.** A 24 GB RTX 4090D jumps to **2.34×** on two cards; a 32 GB Iluvatar MR-V100 hits **3.24×** — both *super-linear* — while the 98 GB Kunlunxin only reaches **1.52×** on *four*. Small models on small cards love extra cards; big cards running small models don't. **(2) But big models flip it: Qwen3-32B on Ascend scaled 2.12× from 4 to 8 cards** (583 → **1237 tok/s**) — near-linear, and as far as I can find **the first public real-machine numbers for a domestic accelerator running 32B on 8 cards.** **(3) Tuning does not port across vendors:** `--kv-cache-dtype fp8` is a +38% free lunch on NVIDIA and *silently produces zero tokens* on Ascend. Copy an NVIDIA tuning guide onto domestic hardware and you'll ship a dead endpoint.
 
@@ -44,7 +43,7 @@ Here's the mental model. vLLM throughput at high concurrency is gated by how man
 
 Now flip it. A 98 GB card running a 7B model (~15 GB in fp16) already had 80+ GB free for KV. It was never memory-bound on this workload. Splitting the model just adds cross-card communication overhead for a bottleneck that barely existed — hence Kunlunxin's weak, sublinear **1.52×** at TP4 (a 24 GB 4090D beat that on *two* cards).
 
-〔观点待核〕 **The takeaway for buyers:** multi-card is *雪中送炭* (a lifeline in the snow) for memory-starved cards and *锦上添花* (diminishing gilding) for big ones. If you're on 24–32 GB cards, a second card can more than pay for itself. If you're on 98 GB cards and running small models, extra cards buy you very little — you'd be better off packing more independent replicas onto single cards.
+**The takeaway for buyers:** multi-card is *雪中送炭* (a lifeline in the snow) for memory-starved cards and *锦上添花* (diminishing gilding) for big ones. If you're on 24–32 GB cards, a second card can more than pay for itself. If you're on 98 GB cards and running small models, extra cards buy you very little — you'd be better off packing more independent replicas onto single cards.
 
 > **One caveat on the "small VRAM" framing:** it's really *single-card KV headroom + engine maturity*, not VRAM alone. The cleanest proof is two **98 GB** cards scaling completely differently: Alibaba PPU keeps climbing to **2.54×** at TP4 while Kunlunxin stalls at **1.52×** — same capacity, different cross-card engine. Capacity sets the ceiling; the vendor's kernels decide how close you get to it.
 
@@ -60,7 +59,7 @@ Single-card, most domestic cards "just work." Multi-card is where the cross-card
 | **MetaX C500** | maca | ✅ TP2/TP4 | (cards busy — not run) | Works on 7B, walls at TP4 (1.43×) |
 | **Hygon K100-AI** | HIP/RCCL | ❌ "invalid device pointer" | ❌ | Multi-card unusable on this vLLM fork — TP1 only |
 
-〔观点待核〕 If you're doing platform selection and you *know* you'll need multi-card for 32B+ models, this table matters more than the single-card ranking. The pattern is striking and consistent: **every domestic stack handles 7B across cards, and every one except Ascend fails on 32B** — PPU's NCCL-compatible layer errors out, Kunlunxin's XCCL crashes the worker at init (I even retried with graph compilation off — same crash), Hygon can't do multi-card at all. Three independent cross-card stacks, three different failure modes, one survivor. Huawei's flagship earns its reputation here: HCCL is the only domestic stack that carried both 7B and 32B across cards — cleanly, up to 8 — in my runs.
+If you're doing platform selection and you *know* you'll need multi-card for 32B+ models, this table matters more than the single-card ranking. The pattern is striking and consistent: **every domestic stack handles 7B across cards, and every one except Ascend fails on 32B** — PPU's NCCL-compatible layer errors out, Kunlunxin's XCCL crashes the worker at init (I even retried with graph compilation off — same crash), Hygon can't do multi-card at all. Three independent cross-card stacks, three different failure modes, one survivor. Huawei's flagship earns its reputation here: HCCL is the only domestic stack that carried both 7B and 32B across cards — cleanly, up to 8 — in my runs.
 
 ## Where multi-card actually earns its keep: 32B
 
@@ -77,7 +76,7 @@ Qwen3-32B in bf16 is ~61 GB of weights. It doesn't fit on a 32 GB card, period. 
 
 Two things here are, as far as I can find, **the first published real-machine numbers for a domestic accelerator running a 32B model on 4 *and* 8 cards.** You can't fake them, and I ran them on physical 910B4 silicon.
 
-〔观点待核〕 And notice the contrast with the 7B story above: 7B *regressed* going from TP4 to more cards (comms overhead beat the benefit), but 32B **scales 2.12× from 4 to 8 cards** — genuinely near-linear. That's the real rule of thumb: **the bigger the model, the more multi-card pays off.** Small models don't need the cards; big models can't live without them, and reward every one you add.
+And notice the contrast with the 7B story above: 7B *regressed* going from TP4 to more cards (comms overhead beat the benefit), but 32B **scales 2.12× from 4 to 8 cards** — genuinely near-linear. That's the real rule of thumb: **the bigger the model, the more multi-card pays off.** Small models don't need the cards; big models can't live without them, and reward every one you add.
 
 > **Why 8 and not more, and why not on 7B:** TP size must divide the model's attention-head count. Qwen3-32B has 64 heads → TP8 is legal. Qwen2.5-7B has only 28 heads → I tried TP8 and vLLM rejected it outright: `Total number of attention heads (28) must be divisible by tensor parallel size (8)`. So "just throw 8 cards at it" isn't a free choice — the model architecture decides which TP sizes even exist.
 

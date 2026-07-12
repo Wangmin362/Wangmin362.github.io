@@ -7,7 +7,6 @@ summary: "Same model, same load, head-to-head on a consumer RTX 4090D vs a 2017 
 ShowToc: true
 ---
 
-> 📌 **给 David 的说明（发布前删掉这段）**：数据表 / methodology / 复现命令 / 版本表都是**真机实测**（2026-07-10 凌晨在 67 集群跑的），可以直接用。**带 `〔观点待核〕` 标记的段落是我替你起草的观察，请用你自己的话改写、核对判断**——尤其代价小节的卡价我是估的，你要核实。全过程 runbook 见 vault `400_Experiments/w1-vllm-bench/RUNBOOK.md`。确认无误后把本段和所有 `〔观点待核〕` 删掉、`draft: false` 发布。
 
 > **TL;DR** — Same Qwen2.5-7B, same load, one card each. At 64 concurrency the RTX 4090D pushes **1316 output tok/s vs the V100's 427 — a 3.1× gap that *widens* with load** (only 1.6× at concurrency 1). But the sharper finding is upstream of any number: **the V100 can't run modern vLLM at all** — its Volta `sm_70` architecture was dropped from the prebuilt PyTorch/vLLM, so it's stuck two years back on the engine. Full numbers and repro steps below.
 
@@ -67,9 +66,9 @@ Full per-card sweeps:
 
 Per-card detail: [4090D](curve-4090.png) · [V100](curve-v100.png)
 
-**〔观点待核〕What I saw:** The throughput gap *scales with load*. At concurrency 1 the 4090D is only 1.6× the V100 (61 vs 38 tok/s) — if you're serving one stream at a time, the old card is fine. But by concurrency 64 the gap is 3.1× (1316 vs 427). The newer architecture (Ada + FlashAttention-2 + the newer scheduler) only cashes out its advantage when the batch is *full*. Buy new silicon for throughput-bound serving, not for a single low-QPS stream.
+**What I saw:** The throughput gap *scales with load*. At concurrency 1 the 4090D is only 1.6× the V100 (61 vs 38 tok/s) — if you're serving one stream at a time, the old card is fine. But by concurrency 64 the gap is 3.1× (1316 vs 427). The newer architecture (Ada + FlashAttention-2 + the newer scheduler) only cashes out its advantage when the batch is *full*. Buy new silicon for throughput-bound serving, not for a single low-QPS stream.
 
-### The perf-per-¥ angle 〔观点待核 — 卡价 David 核实〕
+### The perf-per-¥ angle
 
 Most benchmarks compare "fast vs slow." The question that actually matters for a platform is "cheap vs expensive per token."
 
@@ -80,7 +79,7 @@ Most benchmarks compare "fast vs slow." The question that actually matters for a
 ## What surprised me / gotchas (the part AI can't fake)
 
 - **The V100 fell off a software cliff, not a performance cliff.** Booting Qwen2.5-7B on the current vLLM image failed instantly — not slow, *dead*: `CUDA error: no kernel image is available for execution on the device`, on a plain `torch.zeros`. The image's `torch 2.11.0+cu130` is compiled for `['sm_75, sm_80, sm_86, sm_90, sm_100, sm_120']` — **`sm_70` (Volta) is gone**. The V100 only ran once I dropped back to vLLM **v0.8.5** (torch 2.6, which still ships `sm_70`). The real cost of an old card isn't that it's slower — it's that the modern stack stops shipping kernels for it, and you silently lose two years of engine optimizations. That's invisible in any single-card tok/s number.
-- **A TPOT-p99 crossover.** The 4090D's *tail* TPOT actually *dropped* from 74ms at concurrency 16 to 46ms at concurrency 64, while the V100 climbed monotonically to 150ms. 〔观点待核〕My read: at 16 the new scheduler occasionally starves a decode behind a prefill chunk; by 64 the batch is dense enough that it evens out. Worth a dedicated scheduling-params experiment.
+- **A TPOT-p99 crossover.** The 4090D's *tail* TPOT actually *dropped* from 74ms at concurrency 16 to 46ms at concurrency 64, while the V100 climbed monotonically to 150ms. My read: at 16 the new scheduler occasionally starves a decode behind a prefill chunk; by 64 the batch is dense enough that it evens out. Worth a dedicated scheduling-params experiment.
 - **Getting the weights onto the node was harder than the benchmark.** `docker.io` is blocked, HuggingFace is blocked, and `hf-mirror` doesn't proxy HF's new Xet storage backend (so weight downloads silently time out on `cas-bridge.xethub.hf.co`). ModelScope worked but crawled at ~1.6 MB/s. The fix that actually worked: mount the cluster's existing model PVC (RWX/NFS) read-only and serve from the local path — zero download.
 
 ## Reproduce it yourself

@@ -7,7 +7,6 @@ summary: "Same Qwen2.5-7B, same load, one card each — nine accelerators head-t
 ShowToc: true
 ---
 
-> 📌 **给 David 的说明（发布前删掉这段）**：数据表 / methodology / 复现命令 / 版本表都是**真机实测**（2026-07-10 在 67 + 183 集群跑的），可以直接用。**带 `〔观点待核〕` 标记的段落是我替你起草的观察，请用你自己的话改写、核对判断**——尤其 perf-per-¥ 我没有可靠的国产卡价格，留白给你填。全过程 runbook 见 vault `400_Experiments/w1-vllm-bench/cross-vendor/README.md`（含沐曦整卡修复全记录）。确认无误后把本段和所有 `〔观点待核〕` 删掉、`draft: false` 发布。
 
 > **TL;DR** — Same Qwen2.5-7B, same load (`in=512 / out=128`), one card each, swept to saturation. Peak output throughput, high to low: **Kunlunxin P800 3455 · Alibaba PPU 3407 · MetaX C500 3222 · Ascend 910B4 1679 · RTX 4090D 1602 · Hygon K100-AI 1483 · Iluvatar MR-V100 428 · V100 427 · Cambricon MLU370 18** (tok/s). Two 98 GB domestic cards beat a consumer 4090D by **2×** at high concurrency — big VRAM holds a big KV cache, which is the whole game for throughput-bound serving. But the sharper finding: **MetaX cracked the podium with only a 32 GB slice** (at full compute), which means for a 7B dense model the bottleneck is compute/bandwidth, *not* capacity.
 
@@ -86,7 +85,24 @@ Latency at the point that matters for interactivity — TTFT p99 / TPOT p50, con
 
 <small>*4090D's TTFT-p99 spike at conc 16 is a tail artifact (a prefill chunk stalling a few requests); its p50 TTFT at conc 16 was 155 ms. Full JSON in the repo.</small>
 
-## What the numbers say 〔观点待核 — David 用自己的话改写〕
+## Peak throughput is a vanity metric — the SLO-safe number reshuffles everything
+
+Raw peak tok/s quietly assumes you'll accept *any* latency to get it. Real serving has an SLO. So apply a typical interactive one — **TTFT p99 ≤ 2 s and TPOT p99 ≤ 50 ms** — and ask the question that actually decides a purchase: *what's the highest throughput each card sustains without breaking that SLO?* The ranking falls apart and reforms:
+
+| Card | Peak tok/s | **SLO-safe tok/s** | % of peak kept | at concurrency |
+|---|---:|---:|---:|---:|
+| **Kunlunxin P800** | 3455 | **1934** | 56% | 64 |
+| MetaX C500 | 3222 | 822 | 26% | 16 |
+| Hygon K100-AI | 1483 | 458 | 31% | 16 |
+| Ascend 910B4 | 1679 | 397 | 24% | 16 |
+| **Alibaba PPU** | 3407 | **371** | 11% | 4 |
+| NVIDIA 4090D | 1602 | 229 | 14% | 4 |
+| Iluvatar MR-V100 | 428 | 33 | 8% | 1 |
+| Cambricon MLU370 | 18 | never meets SLO | — | — |
+
+The headline writes itself: **Kunlunxin and Alibaba PPU look tied on peak (3455 vs 3407), but under the SLO, Kunlun sustains 1934 tok/s and PPU only 371 — a 5× gap the leaderboard completely hides.** PPU sprints to its peak by letting TTFT and tail-TPOT balloon (at concurrency 64 its p99 TTFT is ~3 s, past the SLO); Kunlun holds latency *while* scaling. If you serve interactive traffic you are buying the SLO-safe number, not the peak — and it orders the cards differently. (The exact figures shift with your SLO thresholds; the *lesson* — peak ≠ SLO-safe, and they reorder the field — does not. This is why "goodput," not peak throughput, is the number serious inference platforms track.)
+
+## What the numbers say
 
 **1. Big VRAM is a throughput weapon — at high concurrency.** The two 98 GB cards (Kunlunxin P800, Alibaba PPU) peak at 3400+, double the 24 GB 4090D. Not because their silicon is 2× faster — at concurrency 1 they're only ~1.4–1.9× the 4090D. The gap opens up as concurrency climbs, because 98 GB holds a huge KV cache, which lets the scheduler keep hundreds of requests in one batch. Throughput-bound serving is a memory game before it's a FLOPs game.
 
@@ -109,7 +125,7 @@ The clearest argument for 98 GB isn't the 7B numbers — it's that a 62 GB bf16 
 | Kunlunxin P800 | 98 GB | **601** | 3455 → 601 (5.7× slower) |
 | Alibaba PPU | 98 GB | 383 | 3407 → 383 (8.9× slower) |
 
-〔观点待核〕On 7B the two are neck-and-neck (3455 / 3407); on 32B the P800 pulls clearly ahead (601 vs 383). Bigger models lean harder on compute and memory bandwidth, and the P800 has more headroom there. Single-card 32B capability is itself the domestic big-card value proposition — no TP topology, no interconnect tax.
+On 7B the two are neck-and-neck (3455 / 3407); on 32B the P800 pulls clearly ahead (601 vs 383). Bigger models lean harder on compute and memory bandwidth, and the P800 has more headroom there. Single-card 32B capability is itself the domestic big-card value proposition — no TP topology, no interconnect tax.
 
 ## Engine versions (an unlocked benchmark is garbage in three months)
 
@@ -152,8 +168,8 @@ Per-vendor quirks, pod YAMLs, and the full data are in the repo.
 
 - Different engine versions across vendors (unavoidable — each card only runs its own fork). The model is unified and byte-verified; the engine is "each card's own best."
 - Single card, single model, one input/output shape. No cross-vendor TP, no long context, no quantization — yet.
-- **perf-per-¥ 〔David 填：国产卡价格我没有可靠来源，故意留白〕** — the ranking that actually decides a platform purchase is tokens-per-¥, not tokens/s. I don't have trustworthy street prices for these domestic cards, so I'm not going to invent them. If you have real quotes, this is where they go.
-- Next: tensor-parallel 32B on Ascend (183 has 8× 910B4), and the same sweep on the MetaX at full 64 GB.
+- **perf-per-¥** — the ranking that actually decides a platform purchase is tokens-per-¥, not tokens/s. I don't have trustworthy street prices for these domestic cards, so I'm not going to invent them. If you have real quotes, this is where they go.
+- **[Part two](../domestic-accelerators-multicard-tp/) does exactly this**: tensor-parallel scaling from 1 to 8 cards, 32B multi-card (Ascend carries it to TP8; most domestic stacks crash), and per-vendor vLLM tuning. The MetaX at its full 64 GB is still pending — its cards were busy every window I had.
 
 ---
 
