@@ -1,0 +1,27 @@
+{{/* 浏览器语言自动适配 + 记住手动切换的选择。
+     只在语言首页 /en/ 或 /zh/ 上自动跳转——绝不劫持深层链接（分享的文章链接照常打开）。 */}}
+<script>
+(function () {
+  try {
+    // 1) 用户手动点语言菜单时，记住选择（PaperMod 的语言选择器是 ul.lang-menu）
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('.lang-menu a');
+      if (!a) return;
+      var href = a.getAttribute('href') || '';
+      localStorage.setItem('preferred_lang', href.indexOf('/zh') !== -1 ? 'zh' : 'en');
+    }, true);
+
+    // 2) 首次访问、且停在语言首页时，按浏览器语言自动切换一次
+    var p = location.pathname;
+    if (p.charAt(p.length - 1) !== '/') p += '/';
+    var isHome = (p === '/en/' || p === '/zh/');
+    if (!isHome) return;
+
+    var saved = localStorage.getItem('preferred_lang');
+    var cur = (p === '/zh/') ? 'zh' : 'en';
+    var want = saved || (((navigator.language || navigator.userLanguage || 'en')
+                          .toLowerCase().indexOf('zh') === 0) ? 'zh' : 'en');
+    if (want !== cur) location.replace('/' + want + '/');
+  } catch (e) { /* 语言适配是增强项，失败就保持当前语言 */ }
+})();
+</script>

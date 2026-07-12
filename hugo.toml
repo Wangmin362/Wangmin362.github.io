@@ -2,13 +2,18 @@
 # 上线前只需改 baseURL / title / author 三处（README 有说明）
 baseURL = "https://wangmin362.github.io/"
 title = "Heterogeneous Inference Notes"              # ← 站点名，想改随时改，不影响网址
-languageCode = "en"
 theme = "PaperMod"
 enableRobotsTXT = true
 buildDrafts = false        # draft: true 的文章不会发布（模板默认是草稿）
 buildFuture = false
 pygmentsUseClasses = true
 enableEmoji = true
+
+# ── 多语言（中/英双语，各自子目录 /en/ /zh/，根路径按浏览器语言自动跳转）──
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = true   # 默认语言(en)也放 /en/ 下；根 / 变成语言分发页
+# 说明：文件名即语言——`index.md`=英文(默认)，同目录 `index.zh.md`=中文译文；
+# 二者自动配对，右上角语言菜单可互相切换。
 
 [pagination]
   pagerSize = 10
@@ -17,10 +22,86 @@ enableEmoji = true
 [outputs]
   home = ["HTML", "RSS", "JSON"]
 
-# ── PaperMod 参数 ──────────────────────────────────────────────
+# ── 各语言站点 ─────────────────────────────────────────────────
+[languages]
+
+  [languages.en]
+    languageName = "English"
+    languageCode = "en"
+    weight = 1
+    title = "Heterogeneous Inference Notes"
+    [languages.en.params]
+      description = "Real benchmarks of LLM inference across heterogeneous / domestic accelerators (Ascend, Cambricon, Hygon, MetaX, Kunlunxin) vs NVIDIA. Reproducible data, not vibes."
+    [languages.en.params.homeInfoParams]
+      Title = "Heterogeneous Inference, Measured"
+      Content = """
+Go / Kubernetes engineer (7y) working on **LLM inference control-plane & scheduling** across **heterogeneous domestic accelerators**.
+
+Here I publish **reproducible benchmarks** — the same model, same load, run head-to-head on NVIDIA vs Ascend / Cambricon / Hygon / MetaX / Kunlunxin — plus the routing, KV-cache and cost trade-offs behind them.
+
+No vibes. Every number ships with the exact command to reproduce it.
+"""
+    [[languages.en.menu.main]]
+      identifier = "posts"
+      name = "Posts"
+      url = "/posts/"
+      weight = 10
+    [[languages.en.menu.main]]
+      identifier = "tags"
+      name = "Tags"
+      url = "/tags/"
+      weight = 20
+    [[languages.en.menu.main]]
+      identifier = "search"
+      name = "Search"
+      url = "/search/"
+      weight = 30
+    [[languages.en.menu.main]]
+      identifier = "about"
+      name = "About"
+      url = "/about/"
+      weight = 40
+
+  [languages.zh]
+    languageName = "中文"
+    languageCode = "zh-CN"
+    weight = 2
+    title = "异构推理实测笔记"
+    [languages.zh.params]
+      description = "国产异构加速卡（昇腾 / 寒武纪 / 海光 / 沐曦 / 昆仑芯）对比 NVIDIA 的 LLM 推理真机横评。可复现数据，不灌水。"
+    [languages.zh.params.homeInfoParams]
+      Title = "异构推理，用数据说话"
+      Content = """
+7 年 Go / Kubernetes 工程师，专攻**国产异构加速卡上的 LLM 推理控制面与调度编排**。
+
+这里发布**可复现的真机横评**——同一模型、同一负载，在 NVIDIA 对比 昇腾 / 寒武纪 / 海光 / 沐曦 / 昆仑芯 上 head-to-head——以及背后的路由、KV-Cache 与成本权衡。
+
+不灌水。每一个数字都附上可复现的确切命令。
+"""
+    [[languages.zh.menu.main]]
+      identifier = "posts"
+      name = "文章"
+      url = "/posts/"
+      weight = 10
+    [[languages.zh.menu.main]]
+      identifier = "tags"
+      name = "标签"
+      url = "/tags/"
+      weight = 20
+    [[languages.zh.menu.main]]
+      identifier = "search"
+      name = "搜索"
+      url = "/search/"
+      weight = 30
+    [[languages.zh.menu.main]]
+      identifier = "about"
+      name = "关于"
+      url = "/about/"
+      weight = 40
+
+# ── PaperMod 全站通用参数（两语言共享）────────────────────────
 [params]
   env = "production"
-  description = "Real benchmarks of LLM inference across heterogeneous / domestic accelerators (Ascend, Cambricon, Hygon, Moore Threads, Kunlunxin) vs NVIDIA. Reproducible data, not vibes."
   author = "Wangmin362"                   # ← 想换成真名更像"第二简历"，随时改
   defaultTheme = "auto"                   # 跟随系统深/浅色
   ShowReadingTime = true
@@ -33,17 +114,6 @@ enableEmoji = true
   ShowRssButtonInSectionTermList = true
   disableSpecial1stPost = false
 
-  # 首页个人名片（第二简历的门面）
-  [params.homeInfoParams]
-    Title = "异构推理实测笔记 · Heterogeneous Inference, Measured"
-    Content = """
-Go / Kubernetes engineer (7y) working on **LLM inference control-plane & scheduling** across **heterogeneous domestic accelerators**.
-
-Here I publish **reproducible benchmarks** — the same model, same load, run head-to-head on NVIDIA vs Ascend / Cambricon / Hygon / Moore Threads / Kunlunxin — plus the routing, KV-cache and cost trade-offs behind them.
-
-No vibes. Every number ships with the exact command to reproduce it.
-"""
-
   # 社交链接（上线前填自己的；填不了的整行删掉）
   [[params.socialIcons]]
     name = "github"
@@ -55,23 +125,6 @@ No vibes. Every number ships with the exact command to reproduce it.
   [[params.socialIcons]]
     name = "rss"
     url = "index.xml"
-
-# ── 顶部菜单 ───────────────────────────────────────────────────
-[[menu.main]]
-  identifier = "posts"
-  name = "Posts"
-  url = "/posts/"
-  weight = 10
-[[menu.main]]
-  identifier = "tags"
-  name = "Tags"
-  url = "/tags/"
-  weight = 20
-[[menu.main]]
-  identifier = "search"
-  name = "Search"
-  url = "/search/"
-  weight = 30
 
 # ── 代码高亮 ───────────────────────────────────────────────────
 [markup]

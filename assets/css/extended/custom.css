@@ -1,0 +1,39 @@
+/* ── 加宽正文列 ──────────────────────────────────────────────
+   PaperMod 默认 --main-width:720px（对纯英文阅读友好）。
+   本站多表格 / 图 / 中文，适度加宽到 1000px。
+   想更宽/更窄：只改下面这一个数。nav 跟着一起变，保持对齐。 */
+:root {
+  --main-width: 1000px;
+  --nav-width: 1000px;
+}
+
+/* ── 图表更醒目 ──────────────────────────────────────────────
+   benchmark 图是文章主角，占满正文宽度；大屏上再"破格"宽一点看得清。 */
+.post-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.post-content figure {
+  margin-inline: 0;
+}
+
+/* 大屏（≥1280px）让图"破格"到比正文更宽，充分利用你 32" 的横向空间。
+   只作用于文章正文里的图，不影响文字行宽（文字仍在 1000px 内舒适阅读）。 */
+@media (min-width: 1280px) {
+  .post-content figure {
+    width: min(1280px, 90vw);
+    margin-left: calc((100% - min(1280px, 90vw)) / 2);
+    margin-right: calc((100% - min(1280px, 90vw)) / 2);
+  }
+  .post-content figure img {
+    width: 100%;
+  }
+}
+
+/* 表格：宽表可横向滚动，不撑破页面 */
+.post-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
