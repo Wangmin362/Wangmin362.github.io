@@ -79,8 +79,9 @@ During decode, every card must read its full share of the weights once per token
 
 ```
 weights/card    2.0GB    4.0GB    7.75GB   15.5GB
-910B4         131      157      147      163  GB/s   <- all four points flat at ~160
-910B3         147      291      —        665  GB/s   <- climbing steeply, nowhere near saturated
+910B4         131      157      147      163  GB/s   <- all four flat at ~150: at the ceiling
+910B3         147      292      366      665  GB/s   <- monotonic climb, nowhere near saturated
+910B4-1       161      301      350      631  GB/s   <- tracks the 910B3 point-for-point (1~10% apart)
 ```
 
 **The 910B4 is already at its ceiling with 2 GB per card** — weights grew 7.75×, bandwidth crawled from 131 to 163. Over the same range the 910B3 went 147 → 665.
@@ -323,4 +324,4 @@ And one for fellow practitioners:
 
 All comparisons in this post use **the same image digest, the same model files, and the same bench protocol**, so cross-SKU conclusions are comparable.
 
-**Known gaps (stated honestly)**: the 910B4-1 has no 4B/8B isolation runs (only 2 points on its bandwidth curve); the 910B3 box was occupied by another user, so it has no x3 arm for the parameter matrix; cross-node TP16 was never attempted because a neighbour had a long-running service on the second node.
+**Known gaps (stated honestly)**: the 910B3 box was occupied by another user, so it has no x3 arm for the parameter matrix (which is why the "opposite sign" section rests on two SKUs); cross-node TP16 was never attempted because a neighbour had a long-running service on the second node.
