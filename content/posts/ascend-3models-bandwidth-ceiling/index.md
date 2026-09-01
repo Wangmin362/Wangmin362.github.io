@@ -10,7 +10,7 @@ ShowToc: true
 > **TL;DR** — I had three Ascend boxes at once: 910B4 (32G), 910B3 (64G), 910B4-1 (64G). Same image digest, same methodology, 504 measured points. Five numbers worth remembering:
 > **(1) Small models give you the opposite answer** — 910B4 vs 910B3 is **11%** slower on 4B, **309%** slower on 32B;
 > **(2) The mechanism is an effective-bandwidth ceiling** — 910B4 flatlines at **~160 GB/s** from just 2 GB of weights per card, while the other two climb to **665 GB/s**;
-> **(3) Of 8 Ascend-only tuning knobs, exactly one helps** (`enable_flashcomm1`, **+4~5%**), and `weight_nz_mode` **flips sign between SKUs of the same generation: +8.86% vs −2.23%** (both x3-verified, 3~25× the noise floor);
+> **(3) Of 8 Ascend-only tuning knobs, not one works across all three SKUs** — `weight_nz_mode` gives three different outcomes (+8.86% / −1.04% / −2.23%), and `enable_flashcomm1` buys +4~5% on two boxes but is dead on the third (all x3-verified);
 > **(4) Quantization buys latency, not throughput** — W8A8 gives +13% throughput but **+80% goodput**; meanwhile the card with the *biggest* throughput gain (+29%) gains **zero** usable capacity;
 > **(5) I'm retracting a July conclusion** — "Ascend fp16 is 15% slower than bf16" was a **protocol asymmetry**. Same box, same protocol, the real gap is **3%**.
 
@@ -122,19 +122,25 @@ Ascend exposes a set of tuning knobs that simply don't exist in CUDA land (`weig
 
 **Every point measured 3× independently, median reported. The measured x3 spread is only 0.06~0.92%** — which is why these percentages are signal, not noise:
 
-| Parameter | 910B4 | 910B4-1 | Effect / noise | Verdict |
+| Parameter | 910B4 (32G) | 910B3 (64G) | 910B4-1 (64G) | Verdict |
 |---|---:|---:|---:|---|
-| `--enforce-eager` | **−26.32%** | **−58.80%** | 28× / 72× | graph mode is mandatory |
-| **`weight_nz_mode = 2`** | **+8.86%** ⬆️ | **−2.23%** ⬇️ | 25× / 3× | ⚠️ **opposite sign** |
-| **`enable_flashcomm1 = true`** | **+5.07%** | **+4.01%** | 12× / 5× | ✅ the only real win |
-| `enable_static_kernel = true` | +0.08% | −0.94% | 0× / 1× | ⚪ **no gain** (inside noise) |
-| `enable_cpu_binding = false` | +0.3% | −0.1% | — | ⚪ no effect |
+| `--enforce-eager` | **−26.32%** (28×) | **−65.87%** (51×) | **−58.80%** (72×) | graph mode is mandatory |
+| **`weight_nz_mode = 2`** | **+8.86%** (25×) ⬆️ | −1.04% *(in noise)* | **−2.23%** (3×) ⬇️ | ⚠️ **three SKUs, three outcomes** |
+| **`enable_flashcomm1 = true`** | **+5.07%** (12×) | +0.34% *(in noise)* | **+4.01%** (5×) | ⚠️ **works on two, dead on the third** |
+| `enable_static_kernel = true` | +0.08% *(in noise)* | — | −0.94% *(in noise)* | ⚪ **no gain** |
+| `enable_cpu_binding = false` | +0.3% | −0.5% | −0.1% | ⚪ no effect |
 
-> ⚠️ **The 910B3 box was in use by someone else, so it has no x3 arm.** That's why the "opposite sign" claim below rests on two SKUs, not three.
+The bracketed figure is the **effect size as a multiple of that point's x3 spread**; anything marked *(in noise)* falls under 2.5× the noise floor, so it can only be reported as "no gain," never as "harmful."
 
-### `weight_nz_mode`: same vendor, same generation, opposite sign
+### `weight_nz_mode`: three SKUs of one generation, three different outcomes
 
-This is Ascend's NZ weight memory layout. **+8.86% on the 910B4 (25× the noise floor), −2.23% on the 910B4-1 (3× the noise floor) — both significant, opposite signs.**
+This is Ascend's NZ weight memory layout. Three same-generation SKUs give three different answers:
+
+- **910B4: +8.86%** (25× the noise floor — significantly helps)
+- **910B4-1: −2.23%** (3× the noise floor — significantly hurts)
+- **910B3: −1.04%** (inside the noise — no gain)
+
+**Exactly one SKU benefits; the other two don't, and one of them is measurably slower.**
 
 I published a line earlier this year: the same FP8 weights give **+28%** on a 4090D (Ada, has FP8 cores) and **−18%** on an A100 (Ampere, doesn't) — **GPU generation decides whether quantization is a blessing or a curse.**
 
@@ -163,13 +169,15 @@ And the trap is well hidden: turn this on in production and restarts take an hou
 
 | Outcome | Count | Parameters |
 |---|---:|---|
-| ✅ genuinely useful | **1** | `enable_flashcomm1` (+4~5%, **off by default**) |
-| ⚠️ SKU-dependent | 1 | `weight_nz_mode` |
+| ⚠️ SKU-dependent | **2** | `enable_flashcomm1` (+5.07% / +4.01% on two SKUs, but **only +0.34% — dead — on the 910B3**); `weight_nz_mode` (three SKUs, three outcomes) |
 | 🔴 trap | 1 | `enable_static_kernel` (no gain + 65-minute cold compile) |
 | ⚪ no effect | 2 | `enable_cpu_binding`, `fuse_norm_quant` |
 | ❌ unusable here | 4 | `enable_kv_nz` (MLA only), `xlite` (C extension not shipped in the image), `finegrained_tp_config` (MoE only, and only on the D node of a PD-disaggregated setup), `--kv-cache-dtype fp8` (operator doesn't accept it) |
 
 > **You are not going to tune your way out of a domestic accelerator's gap. The gap is in memory bandwidth, not in the flags.**
+>
+> Worse: **even "which flag helps" is SKU-dependent.** Of 8 parameters, the only two that ever produce a gain (`enable_flashcomm1`, `weight_nz_mode`) **each go dead or reverse on one of the three SKUs**.
+> Which means **no "Ascend tuning best practices" document ports across SKUs** — every SKU has to be re-measured.
 
 The `finegrained_tp_config` constraints only became clear by **reading the vllm-ascend source** (`ascend_config.py` carries a hard assert: `The finegrained tp sizes can be enabled only for MOE models`), which saved several wasted runs. Which is the broader point: **for domestic-accelerator adaptation, reading the source has a far better ROI than trying flags at random.**
 
@@ -324,4 +332,4 @@ And one for fellow practitioners:
 
 All comparisons in this post use **the same image digest, the same model files, and the same bench protocol**, so cross-SKU conclusions are comparable.
 
-**Known gaps (stated honestly)**: the 910B3 box was occupied by another user, so it has no x3 arm for the parameter matrix (which is why the "opposite sign" section rests on two SKUs); cross-node TP16 was never attempted because a neighbour had a long-running service on the second node.
+**Known gaps (stated honestly)**: cross-node TP16 was never attempted because a neighbour had a long-running service on the second node; MoE was only measured on one box (the model files differ across boxes, so the numbers aren't comparable) and is kept as an appendix.
