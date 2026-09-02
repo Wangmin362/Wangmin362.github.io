@@ -114,7 +114,7 @@ ShowToc: true
 
 ---
 
-## 三、同代不同型号，同一个参数收益方向相反
+## 三、同一代三个型号，同一个参数三种表现
 
 昇腾有一批 CUDA 世界完全没有的调优旋钮（`weight_nz_mode`、`enable_flashcomm1`、`enable_cpu_binding`…）。我挑了能测的全测了一遍：
 

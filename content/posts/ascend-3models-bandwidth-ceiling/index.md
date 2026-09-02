@@ -114,7 +114,7 @@ A note for NVIDIA people: **CUDA graphs typically buy 10~30% on NVIDIA; aclgraph
 
 ---
 
-## 3. Same generation, one suffix apart, opposite sign
+## 3. Three SKUs of one generation, three different outcomes
 
 Ascend exposes a set of tuning knobs that simply don't exist in CUDA land (`weight_nz_mode`, `enable_flashcomm1`, `enable_cpu_binding`…). I measured every one I could:
 
